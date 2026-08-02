@@ -6,17 +6,20 @@ import { AuthProvider } from "./context/auth/AuthProvider.tsx";
 import { MembersProvider } from "./context/members/MembersProvider.tsx";
 import { ExpenseProvider } from "./context/expense/ExpenseProvider.tsx";
 import { ThemeProvider } from "./context/theme/ThemeProvider.tsx";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider>
-      <AuthProvider>
-        <MembersProvider>
-          <ExpenseProvider>
-            <App />
-          </ExpenseProvider>
-        </MembersProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <ThemeProvider>
+        <AuthProvider>
+          <MembersProvider>
+            <ExpenseProvider>
+              <App />
+            </ExpenseProvider>
+          </MembersProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </GoogleOAuthProvider>
   </StrictMode>,
 );

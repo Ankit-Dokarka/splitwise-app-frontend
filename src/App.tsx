@@ -10,11 +10,13 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import VerifyEmail from "./pages/VerifyEmail";
 import VerificationRoute from "./routes/VerificationRoute";
+import GoogleSignIn from "./pages/AuthTest";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="test" element={<GoogleSignIn />} />
         <Route element={<PublicRoute />}>
           <Route path="/" element={<AuthPage />} />
         </Route>
