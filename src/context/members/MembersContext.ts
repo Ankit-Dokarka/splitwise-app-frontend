@@ -5,8 +5,9 @@ import type { Dispatch, SetStateAction } from "react";
 type MembersContextType = {
   members: Member[];
   setMembers: Dispatch<SetStateAction<Member[]>>;
-  searchUser: (query: string) => Promise<{ email: string }[]>;
-  addMember: (member: Member) => void;
+  searchUser: (query: string) => Promise<Member[]>;
+  addMember: (memberId: string) => Promise<Member>;
+  isLoading: boolean;
 };
 
 export const MembersContext = createContext<MembersContextType | null>(null);

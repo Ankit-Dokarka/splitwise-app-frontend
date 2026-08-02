@@ -1,4 +1,8 @@
 export type Member = {
-  id: string;
+  _id: string;
+  fullName: string;
   email: string;
+  avatar: string;
 };
+
+export type SearchedUser = Member;

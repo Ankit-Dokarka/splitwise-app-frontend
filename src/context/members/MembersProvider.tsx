@@ -1,8 +1,8 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, useCallback, type ReactNode } from "react";
 import { MembersContext } from "./MembersContext";
 import type { Member } from "../../types/member";
 import useAuth from "../../hooks/useAuth";
-import type { User } from "../../types/user";
+import { memberAPI } from "../../api/members/api";
 
 type MembersProviderProps = {
   children: ReactNode;
@@ -11,65 +11,43 @@ type MembersProviderProps = {
 export function MembersProvider({ children }: MembersProviderProps) {
   const { user } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchMembers = useCallback(async () => {
     if (!user) return;
-
-    const allMembers = JSON.parse(localStorage.getItem("members") ?? "{}");
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMembers(allMembers[user.email] ?? []);
+    try {
+      const data = await memberAPI.getMembers();
+      setMembers(data);
+    } catch (error) {
+      console.error("Failed to fetch members:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }, [user]);
 
-  const searchUser = async (query: string): Promise<{ email: string }[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        if (!query || !user) return resolve([]);
+  useEffect(() => {
+    fetchMembers();
+  }, [fetchMembers]);
 
-        const users: Record<string, User> = JSON.parse(
-          localStorage.getItem("users") ?? "{}",
-        );
-        const results = Object.values(users)
-          .filter(
-            (u) =>
-              u.email.toLowerCase().includes(query.toLowerCase()) &&
-              u.email !== user.email,
-          )
-          .map((u) => ({ email: u.email }));
-
-        resolve(results);
-      }, 1000);
-    });
+  const searchUser = async (query: string): Promise<Member[]> => {
+    try {
+      return await memberAPI.searchUsers(query);
+    } catch (error) {
+      console.error("Failed to search users:", error);
+      return [];
+    }
   };
 
-  const addMember = (member: Member) => {
-    if (!user) return;
-
-    const updatedMembers = [...members, member];
-    setMembers(updatedMembers);
-
-    const allMembers = JSON.parse(localStorage.getItem("members") ?? "{}");
-
-    allMembers[user.email] = updatedMembers;
-
-    const friendMembers: Member[] = allMembers[member.email] ?? [];
-    const isAlreadyFriend = friendMembers.some((m) => m.email === user.email);
-
-    if (!isAlreadyFriend) {
-      allMembers[member.email] = [
-        ...friendMembers,
-        {
-          id: crypto.randomUUID(),
-          email: user.email,
-        },
-      ];
-    }
-
-    localStorage.setItem("members", JSON.stringify(allMembers));
+  // NEW: Real API call to add a member
+  const addMember = async (memberId: string): Promise<Member> => {
+    const newMember = await memberAPI.addMember(memberId);
+    setMembers((prev) => [...prev, newMember]);
+    return newMember;
   };
 
   return (
     <MembersContext.Provider
-      value={{ members, setMembers, searchUser, addMember }}
+      value={{ members, setMembers, searchUser, addMember, isLoading }}
     >
       {children}
     </MembersContext.Provider>

@@ -6,9 +6,11 @@ import {
   FiUserPlus,
   FiAlertCircle,
   FiCheckCircle,
+  FiUser,
 } from "react-icons/fi";
 import { useDebounce } from "../hooks/useDebounce";
 import { useMembers } from "../context/members/MembersContext";
+import type { SearchedUser } from "../types/member";
 
 type AddMemberModalProps = {
   isOpen: boolean;
@@ -24,13 +26,15 @@ export default function AddMemberModal({
   const debouncedQuery = useDebounce(query, 500);
 
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<{ email: string }[]>([]);
-  const [addedEmail, setAddedEmail] = useState<string | null>(null);
-  const [addingEmail, setAddingEmail] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<SearchedUser[]>([]);
+
+  // States for Add Member flow
+  const [addedUser, setAddedUser] = useState<SearchedUser | null>(null);
+  const [addingUserId, setAddingUserId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (debouncedQuery.trim().length < 3) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSearchResults([]);
       setIsSearching(false);
       return;
@@ -39,7 +43,8 @@ export default function AddMemberModal({
     let isMounted = true;
     setIsSearching(true);
     setSearchResults([]);
-    setAddedEmail(null);
+    setAddedUser(null);
+    setError(null);
 
     searchUser(debouncedQuery).then((results) => {
       if (isMounted) {
@@ -51,32 +56,31 @@ export default function AddMemberModal({
     return () => {
       isMounted = false;
     };
-  }, [debouncedQuery]);
+  }, [debouncedQuery, searchUser]);
 
   useEffect(() => {
     if (!isOpen) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery("");
       setSearchResults([]);
       setIsSearching(false);
-      setAddedEmail(null);
-      setAddingEmail(null);
+      setAddedUser(null);
+      setAddingUserId(null);
+      setError(null);
     }
   }, [isOpen]);
 
-  const handleAddMember = (email: string) => {
-    setAddingEmail(email);
-
-    setTimeout(() => {
-      const newMember = {
-        id: crypto.randomUUID(),
-        email: email,
-      };
-      addMember(newMember);
-      setAddingEmail(null);
-      setAddedEmail(email);
+  const handleAddMember = async (user: SearchedUser) => {
+    setAddingUserId(user._id);
+    setError(null);
+    try {
+      await addMember(user._id);
+      setAddedUser(user);
       setTimeout(() => onClose(), 1500);
-    }, 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add member.");
+    } finally {
+      setAddingUserId(null);
+    }
   };
 
   if (!isOpen) return null;
@@ -103,7 +107,7 @@ export default function AddMemberModal({
         </div>
 
         <div className="p-5 flex flex-col gap-4">
-          {!addedEmail && (
+          {!addedUser && (
             <div className="relative">
               <FiSearch
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-(--color-text-muted)"
@@ -111,7 +115,7 @@ export default function AddMemberModal({
               />
               <input
                 type="email"
-                placeholder="Enter email to search..."
+                placeholder="Enter email or name to search..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 autoFocus
@@ -120,8 +124,15 @@ export default function AddMemberModal({
             </div>
           )}
 
+          {error && (
+            <div className="flex items-center gap-2 text-sm text-(--color-danger) bg-(--color-danger)/10 p-3 rounded-(--btn-radius) border border-(--color-danger)/30">
+              <FiAlertCircle size={16} className="shrink-0" />
+              <p>{error}</p>
+            </div>
+          )}
+
           <div className="min-h-30 flex items-center justify-center">
-            {addedEmail ? (
+            {addedUser ? (
               <div className="flex flex-col items-center gap-3 text-center py-4">
                 <FiCheckCircle size={40} className="text-(--color-success)" />
                 <div>
@@ -129,7 +140,7 @@ export default function AddMemberModal({
                     Member Added Successfully!
                   </p>
                   <p className="text-xs text-(--color-text-muted) mt-1">
-                    {addedEmail} has been added to your group.
+                    {addedUser.fullName} has been added to your group.
                   </p>
                 </div>
               </div>
@@ -150,7 +161,7 @@ export default function AddMemberModal({
                         size={24}
                         className="text-(--color-danger)"
                       />
-                      <p>No user found with this email.</p>
+                      <p>No user found with this email or name.</p>
                     </div>
                   )}
 
@@ -166,24 +177,38 @@ export default function AddMemberModal({
                   <div className="w-full flex flex-col gap-2 max-h-40 overflow-y-auto">
                     {searchResults.map((result) => {
                       const isAlreadyMember = members.some(
-                        (m) => m.email === result.email,
+                        (m) => m._id === result._id,
                       );
 
                       return (
                         <div
-                          key={result.email}
+                          key={result._id}
                           className="w-full flex items-center justify-between p-3 bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius)"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 flex items-center justify-center rounded-full bg-(--color-primary)/10 text-(--color-primary) font-medium text-sm uppercase">
-                              {result.email[0]}
+                            <div className="w-10 h-10 flex items-center justify-center rounded-full bg-(--color-primary)/10 text-(--color-primary) font-medium text-sm overflow-hidden">
+                              {result.avatar ? (
+                                <img
+                                  src={result.avatar}
+                                  alt={result.fullName}
+                                  className="w-full h-full object-cover"
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                result.fullName?.[0]?.toUpperCase() || (
+                                  <FiUser />
+                                )
+                              )}
                             </div>
                             <div>
                               <p className="text-sm font-medium text-(--color-text)">
+                                {result.fullName}
+                              </p>
+                              <p className="text-xs text-(--color-text-muted)">
                                 {result.email}
                               </p>
                               {isAlreadyMember && (
-                                <p className="text-xs text-(--color-text-muted)">
+                                <p className="text-xs text-(--color-text-muted) mt-0.5">
                                   Already a member
                                 </p>
                               )}
@@ -191,11 +216,11 @@ export default function AddMemberModal({
                           </div>
 
                           <button
-                            onClick={() => handleAddMember(result.email)}
-                            disabled={isAlreadyMember || addingEmail !== null}
+                            onClick={() => handleAddMember(result)}
+                            disabled={isAlreadyMember || addingUserId !== null}
                             className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-(--color-surface) bg-(--color-primary) hover:bg-(--color-primary-hover) rounded-(--btn-radius) transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {addingEmail === result.email ? (
+                            {addingUserId === result._id ? (
                               <FiLoader className="animate-spin" size={14} />
                             ) : (
                               <>
