@@ -8,35 +8,37 @@ import {
 } from "react-icons/fi";
 import { useMembers } from "../context/members/MembersContext";
 import { useExpense } from "../context/expense/ExpenseContext";
-import useAuth from "../hooks/useAuth";
 import AddExpenseModal from "../modals/AddExpenseModal";
 
 export default function Dashboard() {
   const { members } = useMembers();
-  const { expenses } = useExpense();
-  const { user } = useAuth();
+  const { balances, expenses, isLoading } = useExpense();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const hasMembers = members.length > 0;
   const hasExpenses = expenses.length > 0;
 
-  const { youOwe, youAreOwed } = expenses.reduce(
-    (acc, expense) => {
-      const share = expense.amount / 2;
-      if (expense.paidBy === user?.email) {
-        acc.youAreOwed += share;
-      } else {
-        acc.youOwe += share;
-      }
-      return acc;
-    },
-    { youOwe: 0, youAreOwed: 0 },
-  );
+  // Calculate balances from the backend array
+  const youOwe = balances
+    .filter((b) => b.amount < 0)
+    .reduce((sum, b) => sum + Math.abs(b.amount), 0);
+
+  const youAreOwed = balances
+    .filter((b) => b.amount > 0)
+    .reduce((sum, b) => sum + b.amount, 0);
 
   const totalBalance = youAreOwed - youOwe;
 
   const formatINR = (val: number) =>
     `₹${val.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-4 border-(--color-border) border-t-(--color-primary) rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   if (!hasExpenses) {
     return (

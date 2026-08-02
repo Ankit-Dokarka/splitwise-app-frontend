@@ -1,8 +1,8 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, useCallback, type ReactNode } from "react";
 import { ExpenseContext } from "./ExpenseContext";
-import type { Expense } from "../../types/expence";
+import type { Expense, Balance } from "../../types/expence";
 import useAuth from "../../hooks/useAuth";
-import type { Member } from "../../types/member";
+import { expenseAPI } from "../../api/expense/api";
 
 type ExpenseProviderProps = {
   children: ReactNode;
@@ -11,41 +11,34 @@ type ExpenseProviderProps = {
 export function ExpenseProvider({ children }: ExpenseProviderProps) {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [balances, setBalances] = useState<Balance[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchExpenses = useCallback(async () => {
     if (!user) return;
-
-    const allExpenses = JSON.parse(localStorage.getItem("expenses") ?? "{}");
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setExpenses(allExpenses[user.email] ?? []);
+    try {
+      const data = await expenseAPI.getExpenses();
+      setExpenses(data.expenses);
+      setBalances(data.balances);
+    } catch (error) {
+      console.error("Failed to fetch expenses:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }, [user]);
 
-  const addExpense = (expense: Expense) => {
-    if (!user) return;
+  useEffect(() => {
+    fetchExpenses();
+  }, [fetchExpenses]);
 
-    const updatedExpenses = [...expenses, expense];
-    setExpenses(updatedExpenses);
-
-    const allExpenses = JSON.parse(localStorage.getItem("expenses") ?? "{}");
-
-    allExpenses[user.email] = updatedExpenses;
-
-    const allMembers = JSON.parse(localStorage.getItem("members") ?? "{}");
-    const userMembers: Member[] = allMembers[user.email] ?? [];
-
-    const member = userMembers.find((m) => m.id === expense.memberId);
-
-    if (member && member.email !== user.email) {
-      const otherUserExpenses: Expense[] = allExpenses[member.email] ?? [];
-
-      const exists = otherUserExpenses.some((e) => e.id === expense.id);
-      if (!exists) {
-        allExpenses[member.email] = [...otherUserExpenses, expense];
-      }
-    }
-
-    localStorage.setItem("expenses", JSON.stringify(allExpenses));
+  const addExpense = async (payload: {
+    description: string;
+    amount: number;
+    memberId: string;
+    paidBy: string;
+  }) => {
+    await expenseAPI.createExpense(payload);
+    await fetchExpenses(); // Re-fetch to update the list and balances
   };
 
   return (
@@ -53,7 +46,10 @@ export function ExpenseProvider({ children }: ExpenseProviderProps) {
       value={{
         expenses,
         setExpenses,
+        balances,
+        setBalances,
         addExpense,
+        isLoading,
       }}
     >
       {children}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FiX } from "react-icons/fi";
+import { FiX, FiAlertCircle, FiLoader } from "react-icons/fi";
 import { useExpense } from "../context/expense/ExpenseContext";
 import { useMembers } from "../context/members/MembersContext";
 import useAuth from "../hooks/useAuth";
@@ -20,17 +20,22 @@ export default function AddExpenseModal({
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [memberId, setMemberId] = useState("");
-  const [paidBy, setPaidBy] = useState(user?.email || "");
+  const [paidBy, setPaidBy] = useState(user?.id || "");
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // API states
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDescription("");
       setAmount("");
       setMemberId("");
-      setPaidBy(user?.email || "");
+      setPaidBy(user?.id || "");
       setErrors({});
+      setApiError(null);
+      setIsSubmitting(false);
     }
   }, [isOpen, user]);
 
@@ -49,22 +54,28 @@ export default function AddExpenseModal({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
-    const newExpense = {
-      id: crypto.randomUUID(),
-      description: description.trim(),
-      amount: Number(amount),
-      memberId,
-      paidBy,
-      splitRule: "EQUAL" as const,
-      createdAt: new Date().toISOString(),
-    };
+    setIsSubmitting(true);
+    setApiError(null);
 
-    addExpense(newExpense);
-    onClose();
+    try {
+      await addExpense({
+        description: description.trim(),
+        amount: Number(amount),
+        memberId,
+        paidBy,
+      });
+      onClose();
+    } catch (err) {
+      setApiError(
+        err instanceof Error ? err.message : "Failed to add expense.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -83,6 +94,7 @@ export default function AddExpenseModal({
             onClick={onClose}
             className="text-(--color-text-muted) hover:text-(--color-text) transition-colors p-1 rounded-(--btn-radius) hover:bg-(--color-bg)"
             aria-label="Close"
+            disabled={isSubmitting}
           >
             <FiX size={18} />
           </button>
@@ -90,6 +102,13 @@ export default function AddExpenseModal({
 
         <form onSubmit={handleSubmit} className="flex flex-col">
           <div className="p-5 flex flex-col gap-4">
+            {apiError && (
+              <div className="flex items-center gap-2 text-sm text-(--color-danger) bg-(--color-danger)/10 p-3 rounded-(--btn-radius) border border-(--color-danger)/30">
+                <FiAlertCircle size={16} className="shrink-0" />
+                <p>{apiError}</p>
+              </div>
+            )}
+
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-(--color-text)">
                 Description
@@ -99,7 +118,8 @@ export default function AddExpenseModal({
                 placeholder="e.g. Groceries, Rent"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all"
+                disabled={isSubmitting}
+                className="w-full px-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all disabled:opacity-70"
               />
               {errors.description && (
                 <p className="text-xs text-(--color-danger)">
@@ -122,7 +142,8 @@ export default function AddExpenseModal({
                   placeholder="0.00"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full pl-8 pr-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all"
+                  disabled={isSubmitting}
+                  className="w-full pl-8 pr-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all disabled:opacity-70"
                 />
               </div>
               {errors.amount && (
@@ -137,12 +158,13 @@ export default function AddExpenseModal({
               <select
                 value={memberId}
                 onChange={(e) => setMemberId(e.target.value)}
-                className="w-full px-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all"
+                disabled={isSubmitting}
+                className="w-full px-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all disabled:opacity-70"
               >
                 <option value="">Choose a member...</option>
                 {members.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.email}
+                  <option key={m._id} value={m._id}>
+                    {m.fullName} ({m.email})
                   </option>
                 ))}
               </select>
@@ -160,12 +182,13 @@ export default function AddExpenseModal({
               <select
                 value={paidBy}
                 onChange={(e) => setPaidBy(e.target.value)}
-                className="w-full px-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all"
+                disabled={isSubmitting}
+                className="w-full px-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all disabled:opacity-70"
               >
-                <option value={user?.email || ""}>You ({user?.email})</option>
+                <option value={user?.id || ""}>You ({user?.fullName})</option>
                 {members.map((m) => (
-                  <option key={m.id} value={m.email}>
-                    {m.email}
+                  <option key={m._id} value={m._id}>
+                    {m.fullName}
                   </option>
                 ))}
               </select>
@@ -191,15 +214,24 @@ export default function AddExpenseModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-(--color-text) bg-(--color-surface) border border-(--color-border) rounded-(--btn-radius) hover:bg-(--color-bg) transition-colors shadow-sm"
+              disabled={isSubmitting}
+              className="px-4 py-2 text-sm font-medium text-(--color-text) bg-(--color-surface) border border-(--color-border) rounded-(--btn-radius) hover:bg-(--color-bg) transition-colors shadow-sm disabled:opacity-70"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-(--color-surface) bg-(--color-primary) hover:bg-(--color-primary-hover) rounded-(--btn-radius) transition-colors shadow-sm"
+              disabled={isSubmitting}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-(--color-surface) bg-(--color-primary) hover:bg-(--color-primary-hover) rounded-(--btn-radius) transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Add Expense
+              {isSubmitting ? (
+                <>
+                  <FiLoader className="animate-spin" size={14} />
+                  Adding...
+                </>
+              ) : (
+                "Add Expense"
+              )}
             </button>
           </div>
         </form>
