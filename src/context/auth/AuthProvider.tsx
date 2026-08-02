@@ -1,7 +1,7 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { AuthContext } from "./AuthContext";
 import type { User } from "../../types/user";
-import { API } from "../../api/api";
+import { authAPI } from "../../api/auth/api";
 import Spinner from "../../components/auth/Spinner";
 
 type AuthProviderProps = {
@@ -18,7 +18,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const verifyAuth = async () => {
       try {
-        const response = await API.checkAuth();
+        const response = await authAPI.checkAuth();
 
         if (response.success && response.user) {
           setUser({
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(true);
       clearError();
 
-      const response = await API.googleLogin(idToken);
+      const response = await authAPI.googleLogin(idToken);
 
       setUser({
         id: response.user._id,
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = async () => {
     try {
-      await API.logout();
+      await authAPI.logout();
       setUser(null);
       clearError();
     } catch (err) {

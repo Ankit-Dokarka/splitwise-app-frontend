@@ -1,5 +1,5 @@
 import { GoogleLogin } from "@react-oauth/google";
-import { API } from "../api/api";
+import { authAPI } from "../api/auth/api";
 
 export default function GoogleSignIn() {
   return (
@@ -8,7 +8,9 @@ export default function GoogleSignIn() {
         if (!credentialResponse.credential) return;
 
         try {
-          const response = await API.googleLogin(credentialResponse.credential);
+          const response = await authAPI.googleLogin(
+            credentialResponse.credential,
+          );
 
           console.log(response);
         } catch (error) {

@@ -1,6 +1,6 @@
 export const BASE_URL = import.meta.env.VITE_API_URL;
 
-export const API = {
+export const authAPI = {
   async googleLogin(idToken: string) {
     const response = await fetch(`${BASE_URL}/api/auth/google`, {
       method: "POST",
@@ -33,6 +33,20 @@ export const API = {
   },
   async checkAuth() {
     const response = await fetch(`${BASE_URL}/api/auth/check`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message);
+    }
+
+    return data;
+  },
+  async getProfile() {
+    const response = await fetch(`${BASE_URL}/api/users/profile`, {
       method: "GET",
       credentials: "include",
     });
