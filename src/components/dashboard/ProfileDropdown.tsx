@@ -7,9 +7,15 @@ import getName from "../../utils/getName";
 export default function ProfileDropdown() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { user, logout } = useAuth();
-  const naviagte = useNavigate();
+  const navigate = useNavigate();
 
   if (!user) return null;
+
+  const handleLogout = async () => {
+    await logout();
+    setIsDropdownOpen(false);
+    navigate("/");
+  };
 
   return (
     <div className="relative">
@@ -51,7 +57,7 @@ export default function ProfileDropdown() {
               <button
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-(--color-text) hover:bg-(--color-bg) rounded-(--btn-radius) transition-colors"
                 onClick={() => {
-                  naviagte("/dashboard/profile");
+                  navigate("/dashboard/profile");
                   setIsDropdownOpen(false);
                 }}
               >
@@ -61,7 +67,7 @@ export default function ProfileDropdown() {
               <button
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-(--color-text) hover:bg-(--color-bg) rounded-(--btn-radius) transition-colors"
                 onClick={() => {
-                  naviagte("/dashboard/settings");
+                  navigate("/dashboard/settings");
                   setIsDropdownOpen(false);
                 }}
               >
@@ -73,7 +79,7 @@ export default function ProfileDropdown() {
 
               <button
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-(--color-danger) hover:bg-(--color-danger)/10 rounded-(--btn-radius) transition-colors"
-                onClick={logout}
+                onClick={handleLogout}
               >
                 <FiLogOut size={16} />
                 Logout

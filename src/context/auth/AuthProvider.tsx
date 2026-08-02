@@ -1,77 +1,62 @@
-import { useState } from "react";
-import type { ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { AuthContext } from "./AuthContext";
-
 import type { User } from "../../types/user";
-import type { AuthForm } from "../../types/auth";
 import { API } from "../../api/api";
+import Spinner from "../../components/auth/Spinner";
 
 type AuthProviderProps = {
   children: ReactNode;
 };
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(() => {
-    const currentUserEmail = JSON.parse(
-      localStorage.getItem("currentUser") || "null",
-    );
-
-    if (!currentUserEmail) return null;
-
-    const users = JSON.parse(localStorage.getItem("users") || "{}");
-
-    return users[currentUserEmail] ?? null;
-  });
-  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   const clearError = () => setError("");
 
-  const login = async (data: AuthForm) => {
+  useEffect(() => {
+    const verifyAuth = async () => {
+      try {
+        const response = await API.checkAuth();
+
+        if (response.success && response.user) {
+          setUser({
+            id: response.user._id,
+            fullName: response.user.fullName,
+            email: response.user.email,
+            avatar: response.user.avatar,
+          });
+        } else {
+          setUser(null);
+        }
+      } catch {
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    verifyAuth();
+  }, []);
+
+  const googleLogin = async (idToken: string) => {
     try {
       setIsLoading(true);
       clearError();
 
-      const response = await API.login(data);
+      const response = await API.googleLogin(idToken);
 
       setUser({
         id: response.user._id,
-        username: response.user.fullName,
+        fullName: response.user.fullName,
         email: response.user.email,
-        password: "",
+        avatar: response.user.avatar,
       });
 
       return true;
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Login failed");
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const signUp = async (data: AuthForm) => {
-    try {
-      setIsLoading(true);
-      clearError();
-
-      const response = await API.signup(data);
-
-      const newUser = {
-        id: response.user._id,
-        username: response.user.fullName,
-        email: response.user.email,
-        password: "",
-      };
-
-      const users = JSON.parse(localStorage.getItem("users") || "{}");
-      users[newUser.email] = newUser;
-      localStorage.setItem("users", JSON.stringify(users));
-      localStorage.setItem("currentUser", JSON.stringify(newUser.email));
-
-      return true;
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Signup failed");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google login failed");
       return false;
     } finally {
       setIsLoading(false);
@@ -81,25 +66,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = async () => {
     try {
       await API.logout();
-      console.log("logout sucessfull");
-
       setUser(null);
       clearError();
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Logout failed");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Logout failed");
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="h-dvh w-full bg-(--color-bg)">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        googleLogin,
+        logout,
         isLoading,
         error,
-        setIsLoading,
-        login,
-        signUp,
-        logout,
         clearError,
       }}
     >
@@ -107,26 +96,3 @@ export function AuthProvider({ children }: AuthProviderProps) {
     </AuthContext.Provider>
   );
 }
-
-// const signUp = async (data: AuthForm) => {
-//     try {
-//       setIsLoading(true);
-//       clearError();
-
-//       const response = await API.signup(data);
-
-//       setUser({
-//         id: response.user._id,
-//         username: response.user.fullName,
-//         email: response.user.email,
-//         password: "",
-//       });
-
-//       return true;
-//     } catch (error) {
-//       setError(error instanceof Error ? error.message : "Signup failed");
-//       return false;
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   };
