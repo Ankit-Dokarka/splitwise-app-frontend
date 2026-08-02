@@ -1,0 +1,38 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import DashboardLayout from "./layouts/DashboardLayout";
+import Dashboard from "./pages/Dashboard";
+import Recent from "./pages/Recent";
+import Expenses from "./pages/Expenses";
+import PublicRoute from "./routes/PublicRoute";
+import AuthPage from "./pages/Auth";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
+import VerifyEmail from "./pages/VerifyEmail";
+import VerificationRoute from "./routes/VerificationRoute";
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route element={<PublicRoute />}>
+          <Route path="/" element={<AuthPage />} />
+        </Route>
+
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="recent" element={<Recent />} />
+            <Route path="expenses" element={<Expenses />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
+        </Route>
+
+        <Route element={<VerificationRoute />}>
+          <Route path="/verify-email" element={<VerifyEmail />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
