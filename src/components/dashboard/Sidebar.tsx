@@ -8,7 +8,7 @@ import {
 } from "react-icons/fi";
 import Logo from "./Logo";
 import SidebarItem from "./SidebarItem";
-import AddMemberModal from "../../modals/AddMembersModal";
+import AddGroupModal from "../../modals/AddGroupModal";
 import { sidebarNavItems } from "../../constants/navigation";
 import { useMembers } from "../../context/members/MembersContext";
 
@@ -60,7 +60,7 @@ export default function Sidebar() {
                 onClick={() => setShowMembers(!showMembers)}
                 className="flex items-center justify-between w-full px-4 py-2 text-xs font-semibold uppercase text-(--color-text-muted) hover:text-(--color-text) transition-colors"
               >
-                <span>Members ({members.length})</span>
+                <span>Groups ({members.length})</span>
                 {showMembers ? (
                   <FiChevronDown size={14} />
                 ) : (
@@ -77,7 +77,7 @@ export default function Sidebar() {
                   )}
                   {!isLoading && members.length === 0 && (
                     <p className="px-4 py-2 text-xs text-(--color-text-muted)">
-                      No members added yet.
+                      No groups added yet.
                     </p>
                   )}
                   {!isLoading &&
@@ -152,7 +152,7 @@ export default function Sidebar() {
               className="shrink-0 transition-transform duration-200 group-hover:scale-110"
             />
 
-            {!isCollapsed && <span>Add Member</span>}
+            {!isCollapsed && <span>Add Group</span>}
 
             {isCollapsed && (
               <span className="absolute left-full ml-4 px-2.5 py-1.5 bg-(--color-text) text-(--color-surface) text-xs font-medium rounded-(--btn-radius) opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
@@ -175,7 +175,7 @@ export default function Sidebar() {
         </button>
       </aside>
 
-      <AddMemberModal
+      <AddGroupModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
