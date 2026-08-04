@@ -3,7 +3,7 @@ export type User = {
   fullName: string;
   email: string;
   avatar: string;
-  isVerified: boolean;
-  createdAt: string;
-  updatedAt: string;
+  isVerified?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };

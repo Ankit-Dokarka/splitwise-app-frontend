@@ -7,9 +7,32 @@ import {
   FiHome,
   FiCoffee,
 } from "react-icons/fi";
+import type { IconType } from "react-icons";
+
+// --- Types ---
+type Participant = {
+  id: string;
+  name: string;
+  share: number;
+  color?: string;
+};
+
+type Transaction = {
+  id: string;
+  description: string;
+  icon: IconType;
+  date: string;
+  totalAmount: number;
+  paidBy: {
+    id: string;
+    name: string;
+    color: string;
+  };
+  participants: Participant[];
+};
 
 // --- Dummy Data ---
-const dummyTransactions = [
+const dummyTransactions: Transaction[] = [
   {
     id: "t1",
     description: "Monthly Rent",
@@ -18,9 +41,9 @@ const dummyTransactions = [
     totalAmount: 1200.0,
     paidBy: { id: "u1", name: "Alice", color: "#FF6B6B" },
     participants: [
-      { id: "u1", name: "Alice", share: 400.0 },
-      { id: "u2", name: "Bob", share: 400.0 },
-      { id: "u3", name: "Charlie", share: 400.0 },
+      { id: "u1", name: "Alice", share: 400.0, color: "#FF6B6B" },
+      { id: "u2", name: "Bob", share: 400.0, color: "#4ECDC4" },
+      { id: "u3", name: "Charlie", share: 400.0, color: "#FFD166" },
     ],
   },
   {
@@ -31,8 +54,8 @@ const dummyTransactions = [
     totalAmount: 150.5,
     paidBy: { id: "u2", name: "Bob", color: "#4ECDC4" },
     participants: [
-      { id: "u1", name: "Alice", share: 75.25 },
-      { id: "u2", name: "Bob", share: 75.25 },
+      { id: "u1", name: "Alice", share: 75.25, color: "#FF6B6B" },
+      { id: "u2", name: "Bob", share: 75.25, color: "#4ECDC4" },
     ],
   },
   {
@@ -43,9 +66,9 @@ const dummyTransactions = [
     totalAmount: 60.0,
     paidBy: { id: "u3", name: "Charlie", color: "#FFD166" },
     participants: [
-      { id: "u1", name: "Alice", share: 20.0 },
-      { id: "u2", name: "Bob", share: 20.0 },
-      { id: "u3", name: "Charlie", share: 20.0 },
+      { id: "u1", name: "Alice", share: 20.0, color: "#FF6B6B" },
+      { id: "u2", name: "Bob", share: 20.0, color: "#4ECDC4" },
+      { id: "u3", name: "Charlie", share: 20.0, color: "#FFD166" },
     ],
   },
   {
@@ -56,22 +79,22 @@ const dummyTransactions = [
     totalAmount: 24.75,
     paidBy: { id: "u1", name: "Alice", color: "#FF6B6B" },
     participants: [
-      { id: "u1", name: "Alice", share: 8.25 },
-      { id: "u2", name: "Bob", share: 8.25 },
-      { id: "u3", name: "Charlie", share: 8.25 },
+      { id: "u1", name: "Alice", share: 8.25, color: "#FF6B6B" },
+      { id: "u2", name: "Bob", share: 8.25, color: "#4ECDC4" },
+      { id: "u3", name: "Charlie", share: 8.25, color: "#FFD166" },
     ],
   },
 ];
 
 // Helper function to format currency
-const formatCurrency = (amount) =>
+const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
   }).format(amount);
 
 export default function Transactions() {
-  const [selectedTx, setSelectedTx] = useState(null);
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
 
   return (
     <div className="min-h-screen p-4 md:p-8 bg-(--color-bg) font-sans text-(--color-text)">

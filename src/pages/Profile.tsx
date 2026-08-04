@@ -59,7 +59,7 @@ export default function Profile() {
         const response = await profileAPI.getProfile();
         if (response.success && response.user) {
           setProfile({
-            id: response.user._id,
+            _id: response.user._id,
             fullName: response.user.fullName,
             email: response.user.email,
             avatar: response.user.avatar,
@@ -100,7 +100,7 @@ export default function Profile() {
       const response = await profileAPI.updateProfile(fullName);
       if (response.success && response.user) {
         setProfile({
-          id: response.user._id,
+          _id: response.user._id,
           fullName: response.user.fullName,
           email: response.user.email,
           avatar: response.user.avatar,

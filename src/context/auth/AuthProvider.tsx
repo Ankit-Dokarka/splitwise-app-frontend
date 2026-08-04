@@ -22,7 +22,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (response.success && response.user) {
           setUser({
-            id: response.user._id,
+            _id: response.user._id,
             fullName: response.user.fullName,
             email: response.user.email,
             avatar: response.user.avatar,
@@ -48,7 +48,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const response = await authAPI.googleLogin(idToken);
 
       setUser({
-        id: response.user._id,
+        _id: response.user._id,
         fullName: response.user.fullName,
         email: response.user.email,
         avatar: response.user.avatar,
