@@ -11,6 +11,7 @@ import Settings from "./pages/Settings";
 import VerifyEmail from "./pages/VerifyEmail";
 import VerificationRoute from "./routes/VerificationRoute";
 import GoogleSignIn from "./pages/AuthTest";
+import Transactions from "./pages/Transactions";
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="recent" element={<Recent />} />
+            <Route path="transactions" element={<Transactions />} />
             <Route path="expenses" element={<Expenses />} />
             <Route path="profile" element={<Profile />} />
             <Route path="settings" element={<Settings />} />
