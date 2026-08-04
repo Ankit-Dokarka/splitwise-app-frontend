@@ -11,12 +11,12 @@ import { useExpense } from "../context/expense/ExpenseContext";
 import AddExpenseModal from "../modals/AddExpenseModal";
 
 export default function Dashboard() {
-  // Using allUsers from the updated GroupsContext
-  const { allUsers } = useGroup();
+  // Using allUsers and groups from the updated GroupsContext
+  const { allUsers, groups } = useGroup();
   const { balances, expenses, isLoading } = useExpense();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const hasMembers = allUsers.length > 0;
+  const hasGroups = groups.length > 0;
   const hasExpenses = expenses.length > 0;
 
   // Calculate balances from the backend array
@@ -60,15 +60,15 @@ export default function Dashboard() {
             <button
               onClick={() => setIsModalOpen(true)}
               className="w-full flex justify-center items-center gap-2 px-4 py-2.5 bg-(--color-primary) hover:bg-(--color-primary-hover) text-(--color-surface) text-sm font-medium rounded-(--btn-radius) transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-(--color-primary)"
-              disabled={!hasMembers}
+              disabled={!hasGroups}
             >
               <FiPlus size={16} />
               Add Expense
             </button>
 
-            {!hasMembers && (
+            {!hasGroups && (
               <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-max max-w-55 bg-(--color-text) text-(--color-surface) text-xs font-medium px-3 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-lg z-10">
-                Please add a member to add an expense
+                Please create a group to add an expense
                 <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-(--color-text) rotate-45"></div>
               </div>
             )}
@@ -92,15 +92,15 @@ export default function Dashboard() {
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="w-full md:w-auto flex justify-center items-center gap-2 px-4 py-2.5 bg-(--color-primary) hover:bg-(--color-primary-hover) text-(--color-surface) text-sm font-medium rounded-(--btn-radius) transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-(--color-primary)"
-                disabled={!hasMembers}
+                disabled={!hasGroups}
               >
                 <FiPlus size={16} />
                 Add Expense
               </button>
 
-              {!hasMembers && (
+              {!hasGroups && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-max max-w-55 bg-(--color-text) text-(--color-surface) text-xs font-medium px-3 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-lg z-10">
-                  Please add a member to add an expense
+                  Please create a group to add an expense
                   <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-(--color-text) rotate-45"></div>
                 </div>
               )}

@@ -1,11 +1,6 @@
-export const BASE_URL = import.meta.env.VITE_API_URL;
+import type { CreateExpensePayload } from "../../types/expence";
 
-export type CreateExpensePayload = {
-  description: string;
-  amount: number;
-  memberId: string;
-  paidBy: string;
-};
+export const BASE_URL = import.meta.env.VITE_API_URL;
 
 export const expenseAPI = {
   async getExpenses() {

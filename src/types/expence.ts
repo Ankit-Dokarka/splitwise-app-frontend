@@ -7,15 +7,19 @@ export type UserRef = {
 
 export type Participant = {
   user: UserRef;
-  share: number;
+  amount: number;
+  percentage: number;
+  paid: boolean;
 };
 
 export type Expense = {
   _id: string;
+  title: string;
   description: string;
   amount: number;
   currency: string;
   paidBy: UserRef;
+  group: string;
   participants: Participant[];
   splitType: string;
   createdAt: string;
@@ -24,4 +28,14 @@ export type Expense = {
 export type Balance = {
   user: UserRef;
   amount: number;
+};
+
+export type CreateExpensePayload = {
+  title: string;
+  description?: string;
+  amount: number;
+  groupId: string;
+  splitType: "equal" | "percentage";
+  participants: { user: string; percentage?: number }[];
+  ticipants: { user: string; percentage?: number }[];
 };

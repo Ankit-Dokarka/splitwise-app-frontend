@@ -1,6 +1,10 @@
 import { useEffect, useState, useCallback, type ReactNode } from "react";
 import { ExpenseContext } from "./ExpenseContext";
-import type { Expense, Balance } from "../../types/expence";
+import type {
+  Expense,
+  Balance,
+  CreateExpensePayload,
+} from "../../types/expence";
 import useAuth from "../../hooks/useAuth";
 import { expenseAPI } from "../../api/expense/api";
 
@@ -31,12 +35,8 @@ export function ExpenseProvider({ children }: ExpenseProviderProps) {
     fetchExpenses();
   }, [fetchExpenses]);
 
-  const addExpense = async (payload: {
-    description: string;
-    amount: number;
-    memberId: string;
-    paidBy: string;
-  }) => {
+  // Updated to accept the new payload structure
+  const addExpense = async (payload: CreateExpensePayload) => {
     await expenseAPI.createExpense(payload);
     await fetchExpenses(); // Re-fetch to update the list and balances
   };

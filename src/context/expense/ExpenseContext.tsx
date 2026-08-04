@@ -1,18 +1,17 @@
 import { createContext, useContext } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import type { Expense, Balance } from "../../types/expence";
+import type {
+  Expense,
+  Balance,
+  CreateExpensePayload,
+} from "../../types/expence";
 
 type ExpenseContextType = {
   expenses: Expense[];
   setExpenses: Dispatch<SetStateAction<Expense[]>>;
   balances: Balance[];
   setBalances: Dispatch<SetStateAction<Balance[]>>;
-  addExpense: (payload: {
-    description: string;
-    amount: number;
-    memberId: string;
-    paidBy: string;
-  }) => Promise<void>;
+  addExpense: (payload: CreateExpensePayload) => Promise<void>;
   isLoading: boolean;
 };
 

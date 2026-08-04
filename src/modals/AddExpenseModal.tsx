@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { FiX, FiAlertCircle, FiLoader } from "react-icons/fi";
 import { useExpense } from "../context/expense/ExpenseContext";
 import { useGroup } from "../context/groups/GroupsContext";
-import useAuth from "../hooks/useAuth";
 
 type AddExpenseModalProps = {
   isOpen: boolean;
@@ -14,45 +13,57 @@ export default function AddExpenseModal({
   onClose,
 }: AddExpenseModalProps) {
   const { addExpense } = useExpense();
-  // Updated to use allUsers instead of members
-  const { allUsers } = useGroup();
-  const { user } = useAuth();
+  const { allUsers, groups } = useGroup();
 
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
-  const [memberId, setMemberId] = useState("");
-  const [paidBy, setPaidBy] = useState(user?._id || "");
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [groupId, setGroupId] = useState("");
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>(
+    [],
+  );
+  const [splitType, setSplitType] = useState<"equal" | "percentage">("equal");
 
-  // API states
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
+      setTitle("");
       setDescription("");
       setAmount("");
-      setMemberId("");
-      setPaidBy(user?._id || "");
+      setGroupId("");
+      setSelectedParticipants([]);
+      setSplitType("equal");
       setErrors({});
       setApiError(null);
       setIsSubmitting(false);
     }
-  }, [isOpen, user]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!description.trim()) newErrors.description = "Description is required";
+    if (!title.trim()) newErrors.title = "Title is required";
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
       newErrors.amount = "Valid amount is required";
     }
-    if (!memberId) newErrors.memberId = "Please select a member";
-    if (!paidBy) newErrors.paidBy = "Please select who paid";
+    if (!groupId) newErrors.groupId = "Please select a group";
+    if (selectedParticipants.length === 0)
+      newErrors.participants = "Select at least one participant";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const toggleParticipant = (userId: string) => {
+    setSelectedParticipants((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId],
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,12 +74,21 @@ export default function AddExpenseModal({
     setApiError(null);
 
     try {
-      await addExpense({
+      // Construct payload to match backend requirements
+      const payload = {
+        title: title.trim(),
         description: description.trim(),
         amount: Number(amount),
-        memberId,
-        paidBy,
-      });
+        groupId,
+        splitType,
+        // Backend expects an array of objects: { user: userId, percentage?: number }
+        participants: selectedParticipants.map((userId) => ({
+          user: userId,
+          percentage: splitType === "percentage" ? 0 : undefined, // You can add UI to capture percentages later
+        })),
+      };
+
+      await addExpense(payload);
       onClose();
     } catch (err) {
       setApiError(
@@ -86,8 +106,8 @@ export default function AddExpenseModal({
         onClick={onClose}
       ></div>
 
-      <div className="relative z-10 w-full max-w-md bg-(--color-surface) rounded-(--btn-radius) shadow-lg border border-(--color-border) overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b border-(--color-border)">
+      <div className="relative z-10 w-full max-w-md bg-(--color-surface) rounded-(--btn-radius) shadow-lg border border-(--color-border) overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-5 border-b border-(--color-border) shrink-0">
           <h3 className="text-base font-semibold text-(--color-text)">
             Add New Expense
           </h3>
@@ -101,7 +121,7 @@ export default function AddExpenseModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col">
+        <form onSubmit={handleSubmit} className="flex flex-col overflow-y-auto">
           <div className="p-5 flex flex-col gap-4">
             {apiError && (
               <div className="flex items-center gap-2 text-sm text-(--color-danger) bg-(--color-danger)/10 p-3 rounded-(--btn-radius) border border-(--color-danger)/30">
@@ -112,26 +132,38 @@ export default function AddExpenseModal({
 
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-(--color-text)">
-                Description
+                Title <span className="text-(--color-danger)">*</span>
               </label>
               <input
                 type="text"
                 placeholder="e.g. Groceries, Rent"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 disabled={isSubmitting}
                 className="w-full px-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all disabled:opacity-70"
               />
-              {errors.description && (
-                <p className="text-xs text-(--color-danger)">
-                  {errors.description}
-                </p>
+              {errors.title && (
+                <p className="text-xs text-(--color-danger)">{errors.title}</p>
               )}
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-(--color-text)">
-                Amount
+                Description
+              </label>
+              <input
+                type="text"
+                placeholder="Optional notes"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                disabled={isSubmitting}
+                className="w-full px-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all disabled:opacity-70"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-(--color-text)">
+                Amount <span className="text-(--color-danger)">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-(--color-text-muted) text-sm">
@@ -154,64 +186,80 @@ export default function AddExpenseModal({
 
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-(--color-text)">
-                Select Member
+                Select Group <span className="text-(--color-danger)">*</span>
               </label>
               <select
-                value={memberId}
-                onChange={(e) => setMemberId(e.target.value)}
-                disabled={isSubmitting}
+                value={groupId}
+                onChange={(e) => setGroupId(e.target.value)}
+                disabled={isSubmitting || groups.length === 0}
                 className="w-full px-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all disabled:opacity-70"
               >
-                <option value="">Choose a member...</option>
-                {allUsers.map((m) => (
-                  <option key={m._id} value={m._id}>
-                    {m.fullName} ({m.email})
+                <option value="">
+                  {groups.length === 0
+                    ? "Create a group first..."
+                    : "Choose a group..."}
+                </option>
+                {groups.map((g) => (
+                  <option key={g._id} value={g._id}>
+                    {g.name}
                   </option>
                 ))}
               </select>
-              {errors.memberId && (
+              {errors.groupId && (
                 <p className="text-xs text-(--color-danger)">
-                  {errors.memberId}
+                  {errors.groupId}
                 </p>
               )}
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-(--color-text)">
-                Paid By
+                Split Type
               </label>
               <select
-                value={paidBy}
-                onChange={(e) => setPaidBy(e.target.value)}
+                value={splitType}
+                onChange={(e) =>
+                  setSplitType(e.target.value as "equal" | "percentage")
+                }
                 disabled={isSubmitting}
                 className="w-full px-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all disabled:opacity-70"
               >
-                <option value={user?._id || ""}>You ({user?.fullName})</option>
-                {allUsers.map((m) => (
-                  <option key={m._id} value={m._id}>
-                    {m.fullName}
-                  </option>
-                ))}
+                <option value="equal">Equal</option>
+                <option value="percentage">Percentage</option>
               </select>
-              {errors.paidBy && (
-                <p className="text-xs text-(--color-danger)">{errors.paidBy}</p>
-              )}
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-(--color-text)">
-                Split Rule
+                Participants <span className="text-(--color-danger)">*</span>
               </label>
-              <select
-                disabled
-                className="w-full px-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all opacity-70 cursor-not-allowed"
-              >
-                <option>Equal</option>
-              </select>
+              <div className="max-h-32 overflow-y-auto flex flex-col gap-1 border border-(--color-border) rounded-(--btn-radius) p-2 bg-(--color-bg)">
+                {allUsers.map((u) => (
+                  <label
+                    key={u._id}
+                    className="flex items-center gap-2 p-2 hover:bg-(--color-surface) rounded cursor-pointer transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedParticipants.includes(u._id)}
+                      onChange={() => toggleParticipant(u._id)}
+                      className="w-4 h-4 rounded text-(--color-primary) focus:ring-(--color-primary)"
+                    />
+                    <span className="text-sm text-(--color-text)">
+                      {u.fullName} ({u.email})
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {errors.participants && (
+                <p className="text-xs text-(--color-danger)">
+                  {errors.participants}
+                </p>
+              )}
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 p-5 bg-(--color-bg)/30 border-t border-(--color-border)">
+          <div className="flex justify-end gap-3 p-5 bg-(--color-bg)/30 border-t border-(--color-border) shrink-0">
             <button
               type="button"
               onClick={onClose}

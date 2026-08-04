@@ -86,7 +86,7 @@ export default function Sidebar() {
                   {!isLoadingGroups &&
                     groups.map((group) => (
                       <Link
-                        to={`/groups/${group._id}`} // Or wherever your group detail page is
+                        to={"/dashboard"} // Or wherever your group detail page is
                         key={group._id}
                         className="flex items-center gap-3 px-4 py-2 rounded-(--btn-radius) hover:bg-(--color-bg) transition-colors cursor-pointer"
                       >
