@@ -1,3 +1,4 @@
+import type { Group } from "../../types/groups";
 import type { User } from "../../types/user";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
@@ -41,5 +42,15 @@ export const groupsAPI = {
     }
 
     return data.group;
+  },
+  async getGroups(): Promise<Group[]> {
+    const response = await fetch(`${BASE_URL}/api/groups`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Failed to fetch groups");
+    return data.groups as Group[];
   },
 };

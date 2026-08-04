@@ -1,6 +1,7 @@
 import { createContext, useContext } from "react";
 import { type CreateGroupPayload } from "../../api/groups/api";
 import type { User } from "../../types/user";
+import type { Group } from "../../types/groups";
 
 type GroupContextType = {
   allUsers: User[];
@@ -8,6 +9,9 @@ type GroupContextType = {
   fetchUsers: () => Promise<void>;
   createGroup: (payload: CreateGroupPayload) => Promise<void>;
   isCreatingGroup: boolean;
+  groups: Group[];
+  isLoadingGroups: boolean;
+  fetchGroups: () => Promise<void>;
 };
 
 export const GroupsContext = createContext<GroupContextType | null>(null);

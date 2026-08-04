@@ -1,12 +1,16 @@
-import { useState, useCallback, type ReactNode } from "react";
+import { useState, useCallback, type ReactNode, useEffect } from "react";
 import type { User } from "../../types/user";
 import { groupsAPI, type CreateGroupPayload } from "../../api/groups/api";
 import { GroupsContext } from "./GroupsContext";
+import type { Group } from "../../types/groups";
 
 export function GroupsProvider({ children }: { children: ReactNode }) {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [isLoadingGroups, setIsLoadingGroups] = useState(true);
 
   const fetchUsers = useCallback(async () => {
     setIsLoadingUsers(true);
@@ -17,6 +21,18 @@ export function GroupsProvider({ children }: { children: ReactNode }) {
       console.error("Failed to fetch users:", error);
     } finally {
       setIsLoadingUsers(false);
+    }
+  }, []);
+
+  const fetchGroups = useCallback(async () => {
+    setIsLoadingGroups(true);
+    try {
+      const data = await groupsAPI.getGroups();
+      setGroups(data);
+    } catch (error) {
+      console.error("Failed to fetch groups:", error);
+    } finally {
+      setIsLoadingGroups(false);
     }
   }, []);
 
@@ -33,12 +49,19 @@ export function GroupsProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  useEffect(() => {
+    fetchGroups();
+  }, [fetchGroups]);
+
   return (
     <GroupsContext.Provider
       value={{
         allUsers,
         isLoadingUsers,
         fetchUsers,
+        groups,
+        isLoadingGroups,
+        fetchGroups,
         createGroup,
         isCreatingGroup,
       }}
