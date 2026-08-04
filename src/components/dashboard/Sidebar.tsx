@@ -22,7 +22,8 @@ export default function Sidebar() {
   return (
     <>
       <aside
-        className={`hidden md:flex flex-col bg-(--color-surface) border-r border-(--color-border) transition-[width] duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] will-change-[width] relative z-30 shadow-sm ${
+        // 1. Changed z-30 to z-40 so it sits above the main content
+        className={`hidden md:flex flex-col bg-(--color-surface) border-r border-(--color-border) transition-[width] duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] will-change-[width] relative z-40 shadow-sm ${
           isCollapsed ? "w-20" : "w-72"
         }`}
       >
@@ -39,7 +40,8 @@ export default function Sidebar() {
           </div>
         </div>
 
-        <nav className="flex-1 p-3 flex flex-col gap-1.5 pt-6 overflow-y-auto overflow-x-hidden">
+        {/* 2. Removed overflow-y-auto and overflow-x-hidden from here */}
+        <nav className="flex-1 p-3 flex flex-col gap-1.5 pt-6">
           {sidebarNavItems.map((item) => (
             <SidebarItem
               key={item.to}
@@ -116,13 +118,13 @@ export default function Sidebar() {
                 members.slice(0, 5).map((member) => (
                   <div
                     key={member._id}
-                    className="relative group w-9 h-9 rounded-full bg-(--color-primary)/10 text-(--color-primary) flex items-center justify-center text-sm font-medium overflow-hidden shrink-0 cursor-pointer"
+                    className="relative group w-9 h-9 rounded-full bg-(--color-primary)/10 text-(--color-primary) flex items-center justify-center text-sm font-medium shrink-0 cursor-pointer"
                   >
                     {member.avatar ? (
                       <img
                         src={member.avatar}
                         alt={member.fullName}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover rounded-full overflow-hidden"
                         referrerPolicy="no-referrer"
                       />
                     ) : (
