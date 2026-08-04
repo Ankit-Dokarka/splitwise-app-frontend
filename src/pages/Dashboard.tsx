@@ -6,16 +6,17 @@ import {
   FiUsers,
   FiCreditCard,
 } from "react-icons/fi";
-import { useMembers } from "../context/members/MembersContext";
+import { useGroup } from "../context/groups/GroupsContext";
 import { useExpense } from "../context/expense/ExpenseContext";
 import AddExpenseModal from "../modals/AddExpenseModal";
 
 export default function Dashboard() {
-  const { members } = useMembers();
+  // Using allUsers from the updated GroupsContext
+  const { allUsers } = useGroup();
   const { balances, expenses, isLoading } = useExpense();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const hasMembers = members.length > 0;
+  const hasMembers = allUsers.length > 0;
   const hasExpenses = expenses.length > 0;
 
   // Calculate balances from the backend array
@@ -178,7 +179,7 @@ export default function Dashboard() {
                 </p>
                 <p className="text-xs text-(--color-text-muted) mt-2 flex items-center gap-1">
                   <FiUsers size={12} />
-                  Across {members.length} members
+                  Across {allUsers.length} members
                 </p>
               </div>
               <div className="w-12 h-12 flex items-center justify-center rounded-(--btn-radius) bg-(--color-danger)/10 text-(--color-danger)">
@@ -200,7 +201,7 @@ export default function Dashboard() {
                 </p>
                 <p className="text-xs text-(--color-text-muted) mt-2 flex items-center gap-1">
                   <FiUsers size={12} />
-                  Across {members.length} members
+                  Across {allUsers.length} members
                 </p>
               </div>
               <div className="w-12 h-12 flex items-center justify-center rounded-(--btn-radius) bg-(--color-success)/10 text-(--color-success)">

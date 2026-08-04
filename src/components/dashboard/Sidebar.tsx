@@ -2,27 +2,24 @@ import { useState } from "react";
 import {
   FiChevronsLeft,
   FiChevronsRight,
-  FiUserPlus,
   FiChevronDown,
   FiChevronRight,
 } from "react-icons/fi";
+import { MdGroupAdd } from "react-icons/md";
 import Logo from "./Logo";
 import SidebarItem from "./SidebarItem";
 import AddGroupModal from "../../modals/AddGroupModal";
 import { sidebarNavItems } from "../../constants/navigation";
-import { useMembers } from "../../context/members/MembersContext";
 
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showMembers, setShowMembers] = useState(true);
-
-  const { members, isLoading } = useMembers();
+  const [showGroups, setShowGroups] = useState(true);
 
   return (
     <>
       <aside
-        // 1. Changed z-30 to z-40 so it sits above the main content
+        // z-40 so it sits above the main content
         className={`hidden md:flex flex-col bg-(--color-surface) border-r border-(--color-border) transition-[width] duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] will-change-[width] relative z-40 shadow-sm ${
           isCollapsed ? "w-20" : "w-72"
         }`}
@@ -40,7 +37,6 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* 2. Removed overflow-y-auto and overflow-x-hidden from here */}
         <nav className="flex-1 p-3 flex flex-col gap-1.5 pt-6">
           {sidebarNavItems.map((item) => (
             <SidebarItem
@@ -52,89 +48,36 @@ export default function Sidebar() {
             />
           ))}
 
-          {/* Members Section - Expanded View */}
+          {/* Groups Section - Expanded View */}
           {!isCollapsed && (
             <div className="mt-4 pt-4 border-t border-(--color-border)">
               <button
                 type="button"
-                onClick={() => setShowMembers(!showMembers)}
+                onClick={() => setShowGroups(!showGroups)}
                 className="flex items-center justify-between w-full px-4 py-2 text-xs font-semibold uppercase text-(--color-text-muted) hover:text-(--color-text) transition-colors"
               >
-                <span>Groups ({members.length})</span>
-                {showMembers ? (
+                <span>Groups (0)</span>
+                {showGroups ? (
                   <FiChevronDown size={14} />
                 ) : (
                   <FiChevronRight size={14} />
                 )}
               </button>
 
-              {showMembers && (
+              {showGroups && (
                 <div className="flex flex-col gap-1 mt-2 max-h-40 overflow-y-auto pr-1">
-                  {isLoading && (
-                    <div className="flex justify-center py-4">
-                      <div className="w-5 h-5 border-2 border-(--color-border) border-t-(--color-primary) rounded-full animate-spin"></div>
-                    </div>
-                  )}
-                  {!isLoading && members.length === 0 && (
-                    <p className="px-4 py-2 text-xs text-(--color-text-muted)">
-                      No groups added yet.
-                    </p>
-                  )}
-                  {!isLoading &&
-                    members.map((member) => (
-                      <div
-                        key={member._id}
-                        className="flex items-center gap-3 px-4 py-2 rounded-(--btn-radius) hover:bg-(--color-bg) transition-colors cursor-pointer"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-(--color-primary)/10 text-(--color-primary) flex items-center justify-center text-sm font-medium overflow-hidden shrink-0">
-                          {member.avatar ? (
-                            <img
-                              src={member.avatar}
-                              alt={member.fullName}
-                              className="w-full h-full object-cover"
-                              referrerPolicy="no-referrer"
-                            />
-                          ) : (
-                            member.fullName?.[0]?.toUpperCase() || "U"
-                          )}
-                        </div>
-                        <span className="text-sm text-(--color-text) truncate">
-                          {member.fullName}
-                        </span>
-                      </div>
-                    ))}
+                  <p className="px-4 py-2 text-xs text-(--color-text-muted)">
+                    No groups added yet.
+                  </p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Members Section - Collapsed View */}
+          {/* Groups Section - Collapsed View */}
           {isCollapsed && (
             <div className="mt-4 pt-4 border-t border-(--color-border) flex flex-col items-center gap-3">
-              {isLoading && (
-                <div className="w-6 h-6 border-2 border-(--color-border) border-t-(--color-primary) rounded-full animate-spin"></div>
-              )}
-              {!isLoading &&
-                members.slice(0, 5).map((member) => (
-                  <div
-                    key={member._id}
-                    className="relative group w-9 h-9 rounded-full bg-(--color-primary)/10 text-(--color-primary) flex items-center justify-center text-sm font-medium shrink-0 cursor-pointer"
-                  >
-                    {member.avatar ? (
-                      <img
-                        src={member.avatar}
-                        alt={member.fullName}
-                        className="w-full h-full object-cover rounded-full overflow-hidden"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      member.fullName?.[0]?.toUpperCase() || "U"
-                    )}
-                    <span className="absolute left-full ml-4 px-2.5 py-1.5 bg-(--color-text) text-(--color-surface) text-xs font-medium rounded-(--btn-radius) opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
-                      {member.fullName}
-                    </span>
-                  </div>
-                ))}
+              {/* Group avatars will go here once the getGroups API is connected */}
             </div>
           )}
         </nav>
@@ -147,7 +90,7 @@ export default function Sidebar() {
               isCollapsed ? "justify-center px-0" : ""
             }`}
           >
-            <FiUserPlus
+            <MdGroupAdd
               size={18}
               className="shrink-0 transition-transform duration-200 group-hover:scale-110"
             />
@@ -156,7 +99,7 @@ export default function Sidebar() {
 
             {isCollapsed && (
               <span className="absolute left-full ml-4 px-2.5 py-1.5 bg-(--color-text) text-(--color-surface) text-xs font-medium rounded-(--btn-radius) opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
-                Add Member
+                Add Group
               </span>
             )}
           </button>

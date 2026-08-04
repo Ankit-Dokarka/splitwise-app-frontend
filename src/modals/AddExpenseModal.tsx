@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { FiX, FiAlertCircle, FiLoader } from "react-icons/fi";
 import { useExpense } from "../context/expense/ExpenseContext";
-import { useMembers } from "../context/members/MembersContext";
+import { useGroup } from "../context/groups/GroupsContext";
 import useAuth from "../hooks/useAuth";
 
 type AddExpenseModalProps = {
@@ -14,13 +14,14 @@ export default function AddExpenseModal({
   onClose,
 }: AddExpenseModalProps) {
   const { addExpense } = useExpense();
-  const { members } = useMembers();
+  // Updated to use allUsers instead of members
+  const { allUsers } = useGroup();
   const { user } = useAuth();
 
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [memberId, setMemberId] = useState("");
-  const [paidBy, setPaidBy] = useState(user?.id || "");
+  const [paidBy, setPaidBy] = useState(user?._id || "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // API states
@@ -32,7 +33,7 @@ export default function AddExpenseModal({
       setDescription("");
       setAmount("");
       setMemberId("");
-      setPaidBy(user?.id || "");
+      setPaidBy(user?._id || "");
       setErrors({});
       setApiError(null);
       setIsSubmitting(false);
@@ -162,7 +163,7 @@ export default function AddExpenseModal({
                 className="w-full px-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all disabled:opacity-70"
               >
                 <option value="">Choose a member...</option>
-                {members.map((m) => (
+                {allUsers.map((m) => (
                   <option key={m._id} value={m._id}>
                     {m.fullName} ({m.email})
                   </option>
@@ -185,8 +186,8 @@ export default function AddExpenseModal({
                 disabled={isSubmitting}
                 className="w-full px-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all disabled:opacity-70"
               >
-                <option value={user?.id || ""}>You ({user?.fullName})</option>
-                {members.map((m) => (
+                <option value={user?._id || ""}>You ({user?.fullName})</option>
+                {allUsers.map((m) => (
                   <option key={m._id} value={m._id}>
                     {m.fullName}
                   </option>

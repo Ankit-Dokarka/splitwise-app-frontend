@@ -1,29 +1,15 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   FiX,
   FiSearch,
+  FiLoader,
   FiUserPlus,
   FiUser,
   FiCheck,
   FiUsers,
 } from "react-icons/fi";
-
-type SearchedUser = {
-  _id: string;
-  fullName: string;
-  email: string;
-  avatar?: string;
-};
-
-// Dummy data so the UI search and selection still work visually
-const dummyUsers: SearchedUser[] = [
-  { _id: "u1", fullName: "Alice Johnson", email: "alice@example.com" },
-  { _id: "u2", fullName: "Bob Smith", email: "bob@example.com" },
-  { _id: "u3", fullName: "Charlie Brown", email: "charlie@example.com" },
-  { _id: "u4", fullName: "Diana Prince", email: "diana@example.com" },
-  { _id: "u5", fullName: "Evan Wright", email: "evan@example.com" },
-  { _id: "u6", fullName: "Fiona Gallagher", email: "fiona@example.com" },
-];
+import { useGroup } from "../context/groups/GroupsContext";
+import type { User } from "../types/user";
 
 type AddGroupModalProps = {
   isOpen: boolean;
@@ -31,39 +17,44 @@ type AddGroupModalProps = {
 };
 
 export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
-  // Group Info State
+  const { allUsers, isLoadingUsers, fetchUsers, createGroup, isCreatingGroup } =
+    useGroup();
+
   const [groupName, setGroupName] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
-
-  // Member Search & Selection State
   const [query, setQuery] = useState("");
-  const [selectedMembers, setSelectedMembers] = useState<SearchedUser[]>([]);
+  const [selectedMembers, setSelectedMembers] = useState<User[]>([]);
 
-  // Filter dummy users locally based on search query
+  // 1. Fetch users ONLY when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchUsers();
+    }
+  }, [isOpen, fetchUsers]);
+
+  // 2. Filter locally based on search query (No API call here)
   const filteredUsers = useMemo(() => {
-    if (query.trim().length === 0) return dummyUsers;
+    if (query.trim().length === 0) return allUsers;
 
     const lowerCaseQuery = query.toLowerCase();
-    return dummyUsers.filter(
+    return allUsers.filter(
       (user) =>
         user.fullName?.toLowerCase().includes(lowerCaseQuery) ||
         user.email?.toLowerCase().includes(lowerCaseQuery),
     );
-  }, [query]);
+  }, [query, allUsers]);
 
-  // Handle selecting/deselecting members
-  const handleToggleMember = (user: SearchedUser) => {
-    setSelectedMembers((prev) => {
-      const isSelected = prev.some((m) => m._id === user._id);
-      if (isSelected) {
-        return prev.filter((m) => m._id !== user._id);
-      }
-      return [...prev, user];
-    });
+  // 3. Handle selecting/deselecting members
+  const toggleMember = (user: User) => {
+    setSelectedMembers((prev) =>
+      prev.some((m) => m._id === user._id)
+        ? prev.filter((m) => m._id !== user._id)
+        : [...prev, user],
+    );
   };
 
+  // 4. Reset state on close
   const handleClose = () => {
-    // Reset fields when closing
     setGroupName("");
     setGroupDescription("");
     setQuery("");
@@ -71,14 +62,21 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
     onClose();
   };
 
-  const handleCreateGroup = () => {
-    // Just log the data and close the modal
-    console.log("Creating group:", {
-      name: groupName,
-      description: groupDescription,
-      memberIds: selectedMembers.map((m) => m._id),
-    });
-    handleClose();
+  // 5. Handle Create Group API Call
+  const handleCreateGroup = async () => {
+    if (!groupName.trim()) return;
+
+    try {
+      await createGroup({
+        name: groupName,
+        description: groupDescription,
+        members: selectedMembers.map((m) => m._id), // Send array of IDs
+      });
+      handleClose(); // Close modal only on success
+    } catch (error) {
+      // Error is already logged in context. You could add error state here if needed.
+      console.error("Error in modal while creating group:", error);
+    }
   };
 
   if (!isOpen) return null;
@@ -86,12 +84,12 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={handleClose}
       ></div>
 
       <div className="relative z-10 w-full max-w-lg bg-(--color-surface) rounded-(--btn-radius) shadow-lg border border-(--color-border) overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Modal Header */}
+        {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-(--color-border) shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-(--color-primary)/10 text-(--color-primary) rounded-(--btn-radius)">
@@ -103,16 +101,15 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
           </div>
           <button
             onClick={handleClose}
-            className="text-(--color-text-muted) hover:text-(--color-text) transition-colors p-1 rounded-(--btn-radius) hover:bg-(--color-bg)"
-            aria-label="Close"
+            className="text-(--color-text-muted) hover:text-(--color-text) p-1 rounded-(--btn-radius) hover:bg-(--color-bg)"
           >
             <FiX size={18} />
           </button>
         </div>
 
-        {/* Modal Body */}
+        {/* Body */}
         <div className="p-5 flex flex-col gap-4 overflow-y-auto">
-          {/* Group Info Inputs */}
+          {/* Group Info */}
           <div className="flex flex-col gap-4">
             <div>
               <label className="block text-sm font-medium text-(--color-text) mb-1.5">
@@ -120,7 +117,7 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
               </label>
               <input
                 type="text"
-                placeholder="e.g. Apartment 4B, Weekend Trip..."
+                placeholder="e.g. Apartment 4B..."
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
                 className="w-full px-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all"
@@ -140,7 +137,7 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
             </div>
           </div>
 
-          {/* Selected Members Chips */}
+          {/* Selected Members */}
           {selectedMembers.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {selectedMembers.map((m) => (
@@ -153,7 +150,7 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
                   </div>
                   {m.fullName}
                   <button
-                    onClick={() => handleToggleMember(m)}
+                    onClick={() => toggleMember(m)}
                     className="hover:text-(--color-danger)"
                   >
                     <FiX size={12} />
@@ -163,13 +160,12 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
             </div>
           )}
 
-          {/* Divider */}
+          {/* Search & Add Members */}
           <div className="border-t border-(--color-border) pt-4">
             <h4 className="text-sm font-medium text-(--color-text) mb-3">
               Add Members
             </h4>
 
-            {/* Search Input */}
             <div className="relative mb-3">
               <FiSearch
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-(--color-text-muted)"
@@ -177,7 +173,7 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
               />
               <input
                 type="text"
-                placeholder="Search name or email to filter..."
+                placeholder="Search name or email..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all"
@@ -186,88 +182,104 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
 
             {/* User List Area */}
             <div className="min-h-32 max-h-48 overflow-y-auto flex flex-col gap-2 pr-1">
-              {filteredUsers.length === 0 && (
-                <div className="flex flex-col items-center justify-center gap-2 text-(--color-text-muted) text-sm text-center py-8">
-                  <p>No matching users found.</p>
+              {isLoadingUsers && (
+                <div className="flex items-center justify-center gap-2 text-(--color-text-muted) text-sm py-8">
+                  <FiLoader className="animate-spin" size={18} />
+                  Loading users...
                 </div>
               )}
 
-              {filteredUsers.map((result) => {
-                const isSelected = selectedMembers.some(
-                  (m) => m._id === result._id,
-                );
+              {!isLoadingUsers && filteredUsers.length === 0 && (
+                <div className="flex items-center justify-center text-(--color-text-muted) text-sm py-8">
+                  <p>No users found.</p>
+                </div>
+              )}
 
-                return (
-                  <div
-                    key={result._id}
-                    className={`w-full flex items-center justify-between p-2.5 border rounded-(--btn-radius) transition-colors ${
-                      isSelected
-                        ? "bg-(--color-primary)/10 border-(--color-primary)/30"
-                        : "bg-(--color-bg) border-(--color-border) hover:border-(--color-primary)/30"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 flex items-center justify-center rounded-full bg-(--color-primary)/10 text-(--color-primary) font-medium text-sm overflow-hidden">
-                        {result.avatar ? (
-                          <img
-                            src={result.avatar}
-                            alt={result.fullName}
-                            className="w-full h-full object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                        ) : (
-                          result.fullName?.[0]?.toUpperCase() || <FiUser />
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-(--color-text)">
-                          {result.fullName}
-                        </p>
-                        <p className="text-xs text-(--color-text-muted)">
-                          {result.email}
-                        </p>
-                      </div>
-                    </div>
+              {!isLoadingUsers &&
+                filteredUsers.map((user) => {
+                  const isSelected = selectedMembers.some(
+                    (m) => m._id === user._id,
+                  );
 
-                    <button
-                      onClick={() => handleToggleMember(result)}
-                      className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-(--btn-radius) transition-colors ${
+                  return (
+                    <div
+                      key={user._id}
+                      className={`w-full flex items-center justify-between p-2.5 border rounded-(--btn-radius) transition-colors ${
                         isSelected
-                          ? "text-(--color-success) bg-(--color-success)/10 hover:bg-(--color-success)/20"
-                          : "text-(--color-surface) bg-(--color-primary) hover:bg-(--color-primary-hover)"
+                          ? "bg-(--color-primary)/10 border-(--color-primary)/30"
+                          : "bg-(--color-bg) border-(--color-border) hover:border-(--color-primary)/30"
                       }`}
                     >
-                      {isSelected ? (
-                        <>
-                          <FiCheck size={14} /> Added
-                        </>
-                      ) : (
-                        <>
-                          <FiUserPlus size={14} /> Add
-                        </>
-                      )}
-                    </button>
-                  </div>
-                );
-              })}
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 flex items-center justify-center rounded-full bg-(--color-primary)/10 text-(--color-primary) font-medium text-sm overflow-hidden">
+                          {user.avatar ? (
+                            <img
+                              src={user.avatar}
+                              alt={user.fullName}
+                              className="w-full h-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            user.fullName?.[0]?.toUpperCase() || <FiUser />
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-(--color-text)">
+                            {user.fullName}
+                          </p>
+                          <p className="text-xs text-(--color-text-muted)">
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => toggleMember(user)}
+                        className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-(--btn-radius) transition-colors ${
+                          isSelected
+                            ? "text-(--color-success) bg-(--color-success)/10 hover:bg-(--color-success)/20"
+                            : "text-(--color-surface) bg-(--color-primary) hover:bg-(--color-primary-hover)"
+                        }`}
+                      >
+                        {isSelected ? (
+                          <>
+                            <FiCheck size={14} /> Added
+                          </>
+                        ) : (
+                          <>
+                            <FiUserPlus size={14} /> Add
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         </div>
 
-        {/* Modal Footer */}
+        {/* Footer */}
         <div className="flex justify-end gap-3 p-5 bg-(--color-bg)/30 border-t border-(--color-border) shrink-0">
           <button
             onClick={handleClose}
-            className="px-4 py-2 text-sm font-medium text-(--color-text) bg-(--color-surface) border border-(--color-border) rounded-(--btn-radius) hover:bg-(--color-bg) transition-colors shadow-sm"
+            disabled={isCreatingGroup}
+            className="px-4 py-2 text-sm font-medium text-(--color-text) bg-(--color-surface) border border-(--color-border) rounded-(--btn-radius) hover:bg-(--color-bg) transition-colors shadow-sm disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleCreateGroup}
-            disabled={!groupName.trim()}
+            disabled={!groupName.trim() || isCreatingGroup}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-(--color-surface) bg-(--color-primary) hover:bg-(--color-primary-hover) rounded-(--btn-radius) transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Create Group
+            {isCreatingGroup ? (
+              <>
+                <FiLoader className="animate-spin" size={14} />
+                Creating...
+              </>
+            ) : (
+              "Create Group"
+            )}
           </button>
         </div>
       </div>

@@ -1,0 +1,49 @@
+import { useState, useCallback, type ReactNode } from "react";
+import type { User } from "../../types/user";
+import { groupsAPI, type CreateGroupPayload } from "../../api/groups/api";
+import { GroupsContext } from "./GroupsContext";
+
+export function GroupsProvider({ children }: { children: ReactNode }) {
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+
+  const fetchUsers = useCallback(async () => {
+    setIsLoadingUsers(true);
+    try {
+      const users = await groupsAPI.getUsers();
+      setAllUsers(users);
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  }, []);
+
+  const createGroup = useCallback(async (payload: CreateGroupPayload) => {
+    setIsCreatingGroup(true);
+    try {
+      await groupsAPI.createGroup(payload);
+      // You might want to update a groups list state here later
+    } catch (error) {
+      console.error("Failed to create group:", error);
+      throw error; // Throw so the modal can catch it and stay open if needed
+    } finally {
+      setIsCreatingGroup(false);
+    }
+  }, []);
+
+  return (
+    <GroupsContext.Provider
+      value={{
+        allUsers,
+        isLoadingUsers,
+        fetchUsers,
+        createGroup,
+        isCreatingGroup,
+      }}
+    >
+      {children}
+    </GroupsContext.Provider>
+  );
+}
