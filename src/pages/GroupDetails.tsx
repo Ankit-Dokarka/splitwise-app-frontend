@@ -41,11 +41,20 @@ type Expense = {
   createdAt: string;
 };
 
+// NEW: Balance Type
+type Balance = {
+  user: UserRef;
+  paid: number;
+  owes: number;
+  balance: number;
+};
+
 export default function GroupDetails() {
   const { groupId } = useParams<{ groupId: string }>();
   const { groups } = useGroup();
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [balances, setBalances] = useState<Balance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,9 +68,6 @@ export default function GroupDetails() {
   const [modalError, setModalError] = useState<string | null>(null);
 
   const currentGroup = groups.find((g) => g._id === groupId);
-
-  // Extract members safely from the context data
-  const groupMembers: UserRef[] = (currentGroup?.members as UserRef[]) || [];
 
   useEffect(() => {
     if (!groupId) return;
@@ -90,7 +96,7 @@ export default function GroupDetails() {
       }
     };
 
-    // NEW: Fetch balances for the group
+    // Fetch balances for the group
     const fetchBalances = async () => {
       try {
         const response = await fetch(`${BASE_URL}/api/balances/${groupId}`, {
@@ -100,7 +106,7 @@ export default function GroupDetails() {
 
         const data = await response.json();
         if (response.ok) {
-          console.log(`Fetched Balances for Group ${groupId}:`, data.balances);
+          setBalances(data.balances || []);
         } else {
           console.error("Failed to fetch balances:", data.message);
         }
@@ -176,8 +182,6 @@ export default function GroupDetails() {
       if (!response.ok) throw new Error(data.message || "Failed to add member");
 
       handleCloseModal();
-      // Note: You might want to trigger a refetch of groups in your context here
-      // so the new member shows up in the list immediately.
     } catch (err) {
       setModalError(
         err instanceof Error ? err.message : "Failed to add member",
@@ -226,7 +230,7 @@ export default function GroupDetails() {
 
         {/* Main Layout Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* LEFT COLUMN: Expenses List (Takes 2 columns on large screens) */}
+          {/* LEFT COLUMN: Expenses List */}
           <div className="lg:col-span-2">
             {isLoading && (
               <div className="flex items-center justify-center py-24 bg-(--color-surface) border border-(--color-border) rounded-(--btn-radius) shadow-sm">
@@ -375,49 +379,65 @@ export default function GroupDetails() {
             )}
           </div>
 
-          {/* RIGHT COLUMN: Group Members List */}
+          {/* RIGHT COLUMN: Group Balances List */}
           <div className="lg:col-span-1">
             <div className="bg-(--color-surface) border border-(--color-border) rounded-(--btn-radius) shadow-sm p-5 sticky top-8">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-sm font-bold text-(--color-text) uppercase tracking-wider flex items-center gap-2">
                   <FiUsers size={16} className="text-(--color-primary)" />
-                  Group Members
+                  Group Balances
                 </h4>
                 <span className="text-xs font-medium text-(--color-text-muted) bg-(--color-bg) px-2 py-0.5 rounded-full">
-                  {groupMembers.length}
+                  {balances.length} Members
                 </span>
               </div>
 
-              {groupMembers.length === 0 ? (
+              {balances.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <FiUser
                     size={24}
                     className="text-(--color-text-muted) mb-2"
                   />
                   <p className="text-xs text-(--color-text-muted)">
-                    No members found.
+                    Loading balances...
                   </p>
                 </div>
               ) : (
                 <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto pr-1">
-                  {groupMembers.map((member) => (
-                    <div
-                      key={member._id}
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-(--color-bg) transition-colors"
-                    >
-                      <div className="w-9 h-9 rounded-full bg-(--color-primary)/10 text-(--color-primary) flex items-center justify-center text-sm font-bold overflow-hidden">
-                        {member.fullName?.[0]?.toUpperCase()}
+                  {balances.map((b) => {
+                    const isOwed = b.balance > 0;
+
+                    const settled = b.balance === 0;
+
+                    return (
+                      <div
+                        key={b.user._id}
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-(--color-bg) transition-colors"
+                      >
+                        <div className="w-9 h-9 rounded-full bg-(--color-primary)/10 text-(--color-primary) flex items-center justify-center text-sm font-bold overflow-hidden">
+                          {b.user.fullName?.[0]?.toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-(--color-text) truncate">
+                            {b.user.fullName}
+                          </p>
+                          {settled ? (
+                            <p className="text-xs text-(--color-text-muted)">
+                              Settled up
+                            </p>
+                          ) : isOwed ? (
+                            <p className="text-xs text-(--color-success) font-medium">
+                              Gets back {formatINR(b.balance)}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-(--color-danger) font-medium">
+                              Owes {formatINR(Math.abs(b.balance))}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-(--color-text) truncate">
-                          {member.fullName}
-                        </p>
-                        <p className="text-xs text-(--color-text-muted) truncate">
-                          {member.email}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

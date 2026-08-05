@@ -111,7 +111,7 @@ export default function AddExpenseModal({
         description: description.trim(),
         amount: Number(amount),
         groupId,
-        splitType, 
+        splitType,
         participants: selectedParticipants.map((userId) => ({
           user: userId,
           percentage:
