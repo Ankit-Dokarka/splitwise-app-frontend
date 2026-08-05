@@ -61,7 +61,7 @@ export default function GroupDetails() {
   const currentGroup = groups.find((g) => g._id === groupId);
 
   // Extract members safely from the context data
-  const groupMembers: UserRef[] = currentGroup?.members || [];
+  const groupMembers: UserRef[] = (currentGroup?.members as UserRef[]) || [];
 
   useEffect(() => {
     if (!groupId) return;

@@ -37,5 +37,4 @@ export type CreateExpensePayload = {
   groupId: string;
   splitType: "equal" | "percentage";
   participants: { user: string; percentage?: number }[];
-  ticipants: { user: string; percentage?: number }[];
 };
