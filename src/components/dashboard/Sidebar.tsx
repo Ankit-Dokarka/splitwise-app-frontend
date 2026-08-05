@@ -86,7 +86,7 @@ export default function Sidebar() {
                   {!isLoadingGroups &&
                     groups.map((group) => (
                       <Link
-                        to={"/dashboard"} // Or wherever your group detail page is
+                        to={`/dashboard/groups/${group._id}`} // Or wherever your group detail page is
                         key={group._id}
                         className="flex items-center gap-3 px-4 py-2 rounded-(--btn-radius) hover:bg-(--color-bg) transition-colors cursor-pointer"
                       >
@@ -113,7 +113,7 @@ export default function Sidebar() {
               {!isLoadingGroups &&
                 groups.slice(0, 5).map((group) => (
                   <Link
-                    to={`/groups/${group._id}`}
+                    to={`/dashboard/groups/${group._id}`}
                     key={group._id}
                     className="relative group w-9 h-9 rounded-full bg-(--color-primary)/10 text-(--color-primary) flex items-center justify-center text-sm font-medium shrink-0 cursor-pointer"
                   >

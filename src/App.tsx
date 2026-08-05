@@ -12,12 +12,14 @@ import VerifyEmail from "./pages/VerifyEmail";
 import VerificationRoute from "./routes/VerificationRoute";
 import GoogleSignIn from "./pages/AuthTest";
 import Transactions from "./pages/Transactions";
+import GroupDetails from "./pages/GroupDetails";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="test" element={<GoogleSignIn />} />
+
         <Route element={<PublicRoute />}>
           <Route path="/" element={<AuthPage />} />
         </Route>
@@ -30,6 +32,9 @@ export default function App() {
             <Route path="expenses" element={<Expenses />} />
             <Route path="profile" element={<Profile />} />
             <Route path="settings" element={<Settings />} />
+
+            {/* REMOVED THE LEADING SLASH HERE */}
+            <Route path="groups/:groupId" element={<GroupDetails />} />
           </Route>
         </Route>
 
