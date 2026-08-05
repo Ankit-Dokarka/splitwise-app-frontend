@@ -24,6 +24,9 @@ export default function AddExpenseModal({
   );
   const [splitType, setSplitType] = useState<"equal" | "percentage">("equal");
 
+  // State to hold percentages for each user: { [userId]: "25" }
+  const [percentages, setPercentages] = useState<Record<string, string>>({});
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -36,6 +39,7 @@ export default function AddExpenseModal({
       setGroupId("");
       setSelectedParticipants([]);
       setSplitType("equal");
+      setPercentages({});
       setErrors({});
       setApiError(null);
       setIsSubmitting(false);
@@ -43,6 +47,18 @@ export default function AddExpenseModal({
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  // Find the selected group object
+  const selectedGroup = groups.find((g) => g._id === groupId);
+
+  // Filter allUsers to only show those who are members of the selected group
+  const availableParticipants = selectedGroup
+    ? allUsers.filter((u) =>
+        selectedGroup.members.some((m) =>
+          typeof m === "string" ? m === u._id : m._id === u._id,
+        ),
+      )
+    : [];
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -54,16 +70,31 @@ export default function AddExpenseModal({
     if (selectedParticipants.length === 0)
       newErrors.participants = "Select at least one participant";
 
+    if (splitType === "percentage") {
+      const total = selectedParticipants.reduce((sum, userId) => {
+        return sum + (Number(percentages[userId]) || 0);
+      }, 0);
+
+      if (total !== 100) {
+        newErrors.percentages = `Total percentage must equal 100% (currently ${total}%)`;
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const toggleParticipant = (userId: string) => {
-    setSelectedParticipants((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId],
-    );
+    setSelectedParticipants((prev) => {
+      if (prev.includes(userId)) {
+        // Remove user and their percentage
+        const newPercentages = { ...percentages };
+        delete newPercentages[userId];
+        setPercentages(newPercentages);
+        return prev.filter((id) => id !== userId);
+      }
+      return [...prev, userId];
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,11 +111,13 @@ export default function AddExpenseModal({
         description: description.trim(),
         amount: Number(amount),
         groupId,
-        splitType,
-        // Backend expects an array of objects: { user: userId, percentage?: number }
+        splitType, 
         participants: selectedParticipants.map((userId) => ({
           user: userId,
-          percentage: splitType === "percentage" ? 0 : undefined, // You can add UI to capture percentages later
+          percentage:
+            splitType === "percentage"
+              ? Number(percentages[userId])
+              : undefined,
         })),
       };
 
@@ -190,7 +223,10 @@ export default function AddExpenseModal({
               </label>
               <select
                 value={groupId}
-                onChange={(e) => setGroupId(e.target.value)}
+                onChange={(e) => {
+                  setGroupId(e.target.value);
+                  setSelectedParticipants([]); // Reset participants when group changes
+                }}
                 disabled={isSubmitting || groups.length === 0}
                 className="w-full px-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all disabled:opacity-70"
               >
@@ -233,27 +269,74 @@ export default function AddExpenseModal({
               <label className="text-sm font-medium text-(--color-text)">
                 Participants <span className="text-(--color-danger)">*</span>
               </label>
-              <div className="max-h-32 overflow-y-auto flex flex-col gap-1 border border-(--color-border) rounded-(--btn-radius) p-2 bg-(--color-bg)">
-                {allUsers.map((u) => (
-                  <label
-                    key={u._id}
-                    className="flex items-center gap-2 p-2 hover:bg-(--color-surface) rounded cursor-pointer transition-colors"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedParticipants.includes(u._id)}
-                      onChange={() => toggleParticipant(u._id)}
-                      className="w-4 h-4 rounded text-(--color-primary) focus:ring-(--color-primary)"
-                    />
-                    <span className="text-sm text-(--color-text)">
-                      {u.fullName} ({u.email})
-                    </span>
-                  </label>
-                ))}
+              <div className="max-h-48 overflow-y-auto flex flex-col gap-1 border border-(--color-border) rounded-(--btn-radius) p-2 bg-(--color-bg)">
+                {!groupId ? (
+                  <p className="text-xs text-(--color-text-muted) p-2 text-center">
+                    Please select a group to see participants.
+                  </p>
+                ) : availableParticipants.length === 0 ? (
+                  <p className="text-xs text-(--color-text-muted) p-2 text-center">
+                    No users found in this group.
+                  </p>
+                ) : (
+                  availableParticipants.map((u) => {
+                    const isChecked = selectedParticipants.includes(u._id);
+                    return (
+                      <div
+                        key={u._id}
+                        className={`flex items-center justify-between gap-2 p-2 rounded transition-colors ${
+                          isChecked
+                            ? "bg-(--color-primary)/5"
+                            : "hover:bg-(--color-surface)"
+                        }`}
+                      >
+                        <label className="flex items-center gap-2 cursor-pointer flex-1">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleParticipant(u._id)}
+                            className="w-4 h-4 rounded text-(--color-primary) focus:ring-(--color-primary)"
+                          />
+                          <span className="text-sm text-(--color-text) truncate">
+                            {u.fullName}
+                          </span>
+                        </label>
+
+                        {/* Show percentage input only if splitType is percentage AND user is selected */}
+                        {splitType === "percentage" && isChecked && (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              placeholder="0"
+                              value={percentages[u._id] || ""}
+                              onChange={(e) =>
+                                setPercentages((prev) => ({
+                                  ...prev,
+                                  [u._id]: e.target.value,
+                                }))
+                              }
+                              className="w-16 px-2 py-1 text-sm bg-(--color-surface) border border-(--color-border) rounded focus:outline-none focus:ring-1 focus:ring-(--color-primary)"
+                            />
+                            <span className="text-xs text-(--color-text-muted)">
+                              %
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
               </div>
               {errors.participants && (
                 <p className="text-xs text-(--color-danger)">
                   {errors.participants}
+                </p>
+              )}
+              {errors.percentages && (
+                <p className="text-xs text-(--color-danger)">
+                  {errors.percentages}
                 </p>
               )}
             </div>
