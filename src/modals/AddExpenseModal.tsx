@@ -24,7 +24,6 @@ export default function AddExpenseModal({
   );
   const [splitType, setSplitType] = useState<"equal" | "percentage">("equal");
 
-  // State to hold percentages for each user: { [userId]: "25" }
   const [percentages, setPercentages] = useState<Record<string, string>>({});
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -48,14 +47,13 @@ export default function AddExpenseModal({
 
   if (!isOpen) return null;
 
-  // Find the selected group object
   const selectedGroup = groups.find((g) => g._id === groupId);
 
-  // Filter allUsers to only show those who are members of the selected group
+
   const availableParticipants = selectedGroup
     ? allUsers.filter((u) =>
         selectedGroup.members.some((m) =>
-          typeof m === "string" ? m === u._id : m._id === u._id,
+          typeof m === "string" ? m === u.id : m._id === u.id,
         ),
       )
     : [];
@@ -87,7 +85,7 @@ export default function AddExpenseModal({
   const toggleParticipant = (userId: string) => {
     setSelectedParticipants((prev) => {
       if (prev.includes(userId)) {
-        // Remove user and their percentage
+       
         const newPercentages = { ...percentages };
         delete newPercentages[userId];
         setPercentages(newPercentages);
@@ -105,7 +103,7 @@ export default function AddExpenseModal({
     setApiError(null);
 
     try {
-      // Construct payload to match backend requirements
+     
       const payload = {
         title: title.trim(),
         description: description.trim(),
@@ -225,7 +223,7 @@ export default function AddExpenseModal({
                 value={groupId}
                 onChange={(e) => {
                   setGroupId(e.target.value);
-                  setSelectedParticipants([]); // Reset participants when group changes
+                  setSelectedParticipants([]); 
                 }}
                 disabled={isSubmitting || groups.length === 0}
                 className="w-full px-4 py-2.5 text-sm bg-(--color-bg) border border-(--color-border) rounded-(--btn-radius) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all disabled:opacity-70"
@@ -280,10 +278,10 @@ export default function AddExpenseModal({
                   </p>
                 ) : (
                   availableParticipants.map((u) => {
-                    const isChecked = selectedParticipants.includes(u._id);
+                    const isChecked = selectedParticipants.includes(u.id);
                     return (
                       <div
-                        key={u._id}
+                        key={u.id}
                         className={`flex items-center justify-between gap-2 p-2 rounded transition-colors ${
                           isChecked
                             ? "bg-(--color-primary)/5"
@@ -294,7 +292,7 @@ export default function AddExpenseModal({
                           <input
                             type="checkbox"
                             checked={isChecked}
-                            onChange={() => toggleParticipant(u._id)}
+                            onChange={() => toggleParticipant(u.id)}
                             className="w-4 h-4 rounded text-(--color-primary) focus:ring-(--color-primary)"
                           />
                           <span className="text-sm text-(--color-text) truncate">
@@ -302,7 +300,7 @@ export default function AddExpenseModal({
                           </span>
                         </label>
 
-                        {/* Show percentage input only if splitType is percentage AND user is selected */}
+                       
                         {splitType === "percentage" && isChecked && (
                           <div className="flex items-center gap-1">
                             <input
@@ -310,11 +308,11 @@ export default function AddExpenseModal({
                               min="0"
                               max="100"
                               placeholder="0"
-                              value={percentages[u._id] || ""}
+                              value={percentages[u.id] || ""}
                               onChange={(e) =>
                                 setPercentages((prev) => ({
                                   ...prev,
-                                  [u._id]: e.target.value,
+                                  [u.id]: e.target.value,
                                 }))
                               }
                               className="w-16 px-2 py-1 text-sm bg-(--color-surface) border border-(--color-border) rounded focus:outline-none focus:ring-1 focus:ring-(--color-primary)"

@@ -2,7 +2,7 @@ import { useState, useEffect, type ReactNode } from "react";
 import { AuthContext } from "./AuthContext";
 import type { User } from "../../types/user";
 import { authAPI } from "../../api/auth/api";
-import Spinner from "../../components/auth/Spinner";
+
 
 type AuthProviderProps = {
   children: ReactNode;
@@ -22,7 +22,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (response.success && response.user) {
           setUser({
-            _id: response.user._id,
+            id: response.user._id,
             fullName: response.user.fullName,
             email: response.user.email,
             avatar: response.user.avatar,
@@ -48,7 +48,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const response = await authAPI.googleLogin(idToken);
 
       setUser({
-        _id: response.user._id,
+        id: response.user._id,
         fullName: response.user.fullName,
         email: response.user.email,
         avatar: response.user.avatar,
@@ -75,9 +75,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   if (isLoading) {
     return (
-      <div className="h-dvh w-full bg-(--color-bg)">
-        <Spinner size="lg" />
-      </div>
+      <div className="flex justify-center items-center w-full h-full">
+      <div
+        className={"lg  border-4 border-(--color-border) border-t-(--color-primary) rounded-full animate-spin"}
+        style={{ animationDuration: "0.6s" }}
+      ></div>
+    </div>
     );
   }
 

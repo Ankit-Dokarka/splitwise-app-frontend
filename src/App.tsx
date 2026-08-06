@@ -32,8 +32,6 @@ export default function App() {
             <Route path="expenses" element={<Expenses />} />
             <Route path="profile" element={<Profile />} />
             <Route path="settings" element={<Settings />} />
-
-            {/* REMOVED THE LEADING SLASH HERE */}
             <Route path="groups/:groupId" element={<GroupDetails />} />
           </Route>
         </Route>

@@ -59,7 +59,7 @@ export default function Profile() {
         const response = await profileAPI.getProfile();
         if (response.success && response.user) {
           setProfile({
-            _id: response.user._id,
+            id: response.user._id,
             fullName: response.user.fullName,
             email: response.user.email,
             avatar: response.user.avatar,
@@ -100,7 +100,7 @@ export default function Profile() {
       const response = await profileAPI.updateProfile(fullName);
       if (response.success && response.user) {
         setProfile({
-          _id: response.user._id,
+          id: response.user._id,
           fullName: response.user.fullName,
           email: response.user.email,
           avatar: response.user.avatar,
@@ -143,7 +143,7 @@ export default function Profile() {
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
-        fileInputRef.current.value = ""; // Reset input so same file can be selected again
+        fileInputRef.current.value = ""; 
       }
     }
   };

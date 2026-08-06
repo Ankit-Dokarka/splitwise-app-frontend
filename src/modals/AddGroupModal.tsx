@@ -25,14 +25,14 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
   const [query, setQuery] = useState("");
   const [selectedMembers, setSelectedMembers] = useState<User[]>([]);
 
-  // 1. Fetch users ONLY when modal opens
+
   useEffect(() => {
     if (isOpen) {
       fetchUsers();
     }
   }, [isOpen, fetchUsers]);
 
-  // 2. Filter locally based on search query (No API call here)
+
   const filteredUsers = useMemo(() => {
     if (query.trim().length === 0) return allUsers;
 
@@ -44,16 +44,16 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
     );
   }, [query, allUsers]);
 
-  // 3. Handle selecting/deselecting members
+
   const toggleMember = (user: User) => {
     setSelectedMembers((prev) =>
-      prev.some((m) => m._id === user._id)
-        ? prev.filter((m) => m._id !== user._id)
+      prev.some((m) => m.id === user.id)
+        ? prev.filter((m) => m.id !== user.id)
         : [...prev, user],
     );
   };
 
-  // 4. Reset state on close
+
   const handleClose = () => {
     setGroupName("");
     setGroupDescription("");
@@ -62,7 +62,7 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
     onClose();
   };
 
-  // 5. Handle Create Group API Call
+
   const handleCreateGroup = async () => {
     if (!groupName.trim()) return;
 
@@ -70,11 +70,11 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
       await createGroup({
         name: groupName,
         description: groupDescription,
-        members: selectedMembers.map((m) => m._id), // Send array of IDs
+        members: selectedMembers.map((m) => m.id), 
       });
-      handleClose(); // Close modal only on success
+      handleClose(); 
     } catch (error) {
-      // Error is already logged in context. You could add error state here if needed.
+   
       console.error("Error in modal while creating group:", error);
     }
   };
@@ -142,7 +142,7 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
             <div className="flex flex-wrap gap-2">
               {selectedMembers.map((m) => (
                 <div
-                  key={m._id}
+                  key={m.id}
                   className="flex items-center gap-1.5 pl-1.5 pr-2 py-1 bg-(--color-primary)/10 text-(--color-primary) text-xs font-medium rounded-full"
                 >
                   <div className="w-5 h-5 rounded-full bg-(--color-primary) text-white flex items-center justify-center text-[10px]">
@@ -198,12 +198,12 @@ export default function AddGroupModal({ isOpen, onClose }: AddGroupModalProps) {
               {!isLoadingUsers &&
                 filteredUsers.map((user) => {
                   const isSelected = selectedMembers.some(
-                    (m) => m._id === user._id,
+                    (m) => m.id === user.id,
                   );
 
                   return (
                     <div
-                      key={user._id}
+                      key={user.id}
                       className={`w-full flex items-center justify-between p-2.5 border rounded-(--btn-radius) transition-colors ${
                         isSelected
                           ? "bg-(--color-primary)/10 border-(--color-primary)/30"
